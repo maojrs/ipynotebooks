@@ -1,0 +1,300 @@
+<script src="processing.js"></script>
+<script type="text/processing" data-processing-target="mycanvas">
+// Position of draggable points
+float bx;
+float by;
+float bx2;
+float by2;
+//Size of points
+int bs = 25;
+// Variables required for dragging
+boolean bover = false;
+boolean locked = false;
+boolean bover2 = true;
+boolean locked2 = true;
+float bdifx = 0.0; 
+float bdify = 0.0; 
+float bdifx2 = 0.0; 
+float bdify2 = 0.0; 
+
+// Set bulk and density (left and right)
+float bulkL = 1;    
+float bulkR = 4;   
+float rhoL = 1;
+float rhoR = 2;
+
+// Define speeds and impedance (left and right)
+float cL = sqrt(bulkL/rhoL);  
+float cR = sqrt(bulkR/rhoR);  
+float ZL = rhoL*cL;
+float ZR = rhoR*cR;
+  
+// Calculate alphas
+float det = ZL + ZR;
+float pL = 7.0;
+float uL = 1.0;
+float pR = 3.0;
+float uR = -2.0;
+
+// Eigenvector variables
+PVector r1;
+PVector r2;
+
+void setup() 
+{
+  size(400, 400);
+  PVector b1init = mapp2c(new PVector(pL,uL));
+  PVector b2init = mapp2c(new PVector(pR,uR));
+  bx = b1init.x;
+  by = b1init.y;
+  bx2 = b2init.x;
+  by2 = b2init.y; 
+}
+
+
+
+void draw() 
+{ 
+  background(255);
+  stroke(0);
+  // Draw eigenvector lines
+  drawEigen();
+  
+  // Test if the cursor is over the box 
+  if (mouseX > bx-bs && mouseX < bx+bs && 
+      mouseY > by-bs && mouseY < by+bs) {
+    bover = true; 
+    //stroke(0);  
+    if(!locked) { 
+      fill(255,0,0);
+    } 
+  } else {
+    //stroke(255);
+    fill(150,0,0);
+    bover = false;
+  }
+  
+  // Draw the points
+  textSize(32);
+  text("qL", bx+15, by+15);
+  ellipse(bx, by, bs, bs);
+  
+  // Test if the cursor is over the second box 
+  if (mouseX > bx2-bs && mouseX < bx2+bs && 
+      mouseY > by2-bs && mouseY < by2+bs) {
+    bover2 = true; 
+    //stroke(0);  
+    if(!locked2) { 
+      fill(255,0,0);
+    } 
+  } else {
+    //stroke(255);
+    fill(150,0,0);
+    bover2 = false;
+  }
+
+  // Draw the points
+  textSize(32);
+  text("qR", bx2+15, by2+15);
+  ellipse(bx2, by2, bs, bs);
+  }
+
+void drawEigen() {
+  // Riemann problem variables
+  PVector b1 = mapc2p(new PVector(bx,by));
+  PVector b2 = mapc2p(new PVector(bx2,by2));
+  float dq0 = b2.x - b1.x;
+  float dq1 = b2.y - b1.y;
+  float alL = (-dq0 + dq1*ZR)/det;
+  float alR = (dq0 + dq1*ZL)/det;
+  
+  r1 = new PVector(-ZL,1);
+  r2 = new PVector(ZR,1);
+  PVector qm = new PVector(b1.x + alL*r1.x, b1.y + alL*r1.y);
+  PVector qm2 = new PVector(b2.x - alR*r2.x, b2.y - alR*r2.y);
+  
+  // Calculate initial and final points of parralleliped lines and arrows
+  float len =10;
+  PVector xx1s = new PVector(b1.x - len*r1.x, b1.y - len*r1.y);
+  PVector xx1e = new PVector(b1.x + len*r1.x, b1.y + len*r1.y);
+  PVector xx2s = new PVector(b1.x - len*r2.x, b1.y - len*r2.y);
+  PVector xx2e = new PVector(b1.x + len*r2.x, b1.y + len*r2.y);
+  PVector xx3s = new PVector(b2.x - len*r1.x, b2.y - len*r1.y);
+  PVector xx3e = new PVector(b2.x + len*r1.x, b2.y + len*r1.y);
+  PVector xx4s = new PVector(b2.x - len*r2.x, b2.y - len*r2.y);
+  PVector xx4e = new PVector(b2.x + len*r2.x, b2.y + len*r2.y);
+  
+  // Transforma arrow points
+  float scale = 0.7;
+  float x0 = 1.0;
+  float y0 = -4.5;
+  PVector r0s = new PVector(x0, y0);
+  PVector r10e = new PVector(x0 + scale*r1.x, y0 + scale*r1.y);
+  PVector r20e = new PVector(x0 + scale*r2.x, y0 + scale*r2.y);
+  
+  // Tranform them into computational domain
+  PVector xx1s_d = mapp2c(xx1s);
+  PVector xx1e_d = mapp2c(xx1e);
+  PVector xx2s_d = mapp2c(xx2s);
+  PVector xx2e_d = mapp2c(xx2e);
+  PVector xx3s_d = mapp2c(xx3s);
+  PVector xx3e_d = mapp2c(xx3e);
+  PVector xx4s_d = mapp2c(xx4s);
+  PVector xx4e_d = mapp2c(xx4e);  
+  PVector r0s_d = mapp2c(r0s);
+  PVector r10e_d = mapp2c(r10e);
+  PVector r20e_d = mapp2c(r20e);  
+  
+  // Now with arrow point
+  PVector r1_d = mapp2c(r1);
+  PVector r2_d = mapp2c(r2);
+  PVector qm_d = mapp2c(qm);
+  PVector qm2_d = mapp2c(qm2);
+
+  // Draw dotted lines paralleliped
+  //fill(0);
+  dottedLine(xx1s_d.x, xx1s_d.y, xx1e_d.x, xx1e_d.y, 300);
+  dottedLine(xx2s_d.x, xx2s_d.y, xx2e_d.x, xx2e_d.y, 500);
+  dottedLine(xx3s_d.x, xx3s_d.y, xx3e_d.x, xx3e_d.y, 300);
+  dottedLine(xx4s_d.x, xx4s_d.y, xx4e_d.x, xx4e_d.y, 500);
+  
+  // Draw lines to qm state and text
+  stroke(0);
+  fill(0);
+  line(bx,by,qm_d.x ,qm_d.y);
+  ellipse(qm_d.x, qm_d.y, bs/2, bs/2);
+  line(bx2,by2, qm2_d.x, qm2_d.y);
+  ellipse(qm2_d.x, qm2_d.y, bs/2, bs/2);
+  textSize(32);
+  text("qM", qm_d.x+15, qm_d.y+15);
+  
+  text("r1", r10e_d.x+20, r10e_d.y+20);
+  text("r2", r20e_d.x+20, r20e_d.y+20);
+  drawArrow(r0s_d.x, r0s_d.y , r10e_d.x, r10e_d.y ,1, 10,true);
+  drawArrow(r0s_d.x, r0s_d.y , r20e_d.x, r20e_d.y, 1, 10,true);
+  fill(255,0,0);
+  
+}
+
+// Transform the display domain into a physical domain from 0,5 in x and -5,5 y
+PVector mapc2p(PVector xyc) {
+  PVector xyp;
+  float xp = 10*xyc.x/width;
+  float yp = 5 - 10*xyc.y/height;
+  xyp = new PVector(xp, yp);
+  return xyp;
+}
+
+// Inverse transform
+PVector mapp2c(PVector xyp) {
+  PVector xyc;
+  float xc = width*(xyp.x)/10;
+  float yc = -height*(xyp.y-5)/10;
+  xyc = new PVector(xc, yc);
+  return xyc;
+}
+
+void mousePressed() {
+  if(bover) { 
+    locked = true; 
+    fill(255,0,0);
+  } else {
+    locked = false;
+  }
+  
+  if(bover2) { 
+    locked2 = true; 
+    fill(255,0,0);
+  } else {
+    locked2 = false;
+  }
+
+  bdifx = mouseX-bx; 
+  bdify = mouseY-by;
+  bdifx2 = mouseX-bx2; 
+  bdify2 = mouseY-by2; 
+}
+
+
+
+void mouseDragged() {
+  if(locked) {
+    bx = mouseX-bdifx; 
+    by = mouseY-bdify; 
+  }
+  if(locked2) {
+    bx2 = mouseX-bdifx2; 
+    by2 = mouseY-bdify2; 
+  }
+}
+
+
+
+void mouseReleased() {
+  locked = false;
+  locked2 = false;
+}
+
+void dottedLine(float x1, float y1, float x2, float y2, float steps){
+ for(int i=0; i<=steps; i++) {
+   float x = lerp(x1, x2, i/steps);
+   float y = lerp(y1, y2, i/steps);
+   noStroke();
+   ellipse(x, y,2,2);
+ }
+}
+ 
+void drawArrow(float x0, float y0, float x1, float y1, float beginHeadSize, float endHeadSize, boolean filled) {
+  PVector d = new PVector(x1 - x0, y1 - y0);
+  d.normalize();
+  
+  float coeff = 1.5;
+  
+  strokeCap(SQUARE);
+  
+  line(x0+d.x*beginHeadSize*coeff/(filled?1.0f:1.75f), 
+        y0+d.y*beginHeadSize*coeff/(filled?1.0f:1.75f), 
+        x1-d.x*endHeadSize*coeff/(filled?1.0f:1.75f), 
+        y1-d.y*endHeadSize*coeff/(filled?1.0f:1.75f));
+  
+  float angle = atan2(d.y, d.x);
+  
+  if (filled) {
+    // begin head
+    pushMatrix();
+    translate(x0, y0);
+    rotate(angle+PI);
+    triangle(-beginHeadSize*coeff, -beginHeadSize, 
+             -beginHeadSize*coeff, beginHeadSize, 
+             0, 0);
+    popMatrix();
+    // end head
+    pushMatrix();
+    translate(x1, y1);
+    rotate(angle);
+    triangle(-endHeadSize*coeff, -endHeadSize, 
+             -endHeadSize*coeff, endHeadSize, 
+             0, 0);
+    popMatrix();
+  } 
+  else {
+    // begin head
+    pushMatrix();
+    translate(x0, y0);
+    rotate(angle+PI);
+    strokeCap(ROUND);
+    line(-beginHeadSize*coeff, -beginHeadSize, 0, 0);
+    line(-beginHeadSize*coeff, beginHeadSize, 0, 0);
+    popMatrix();
+    // end head
+    pushMatrix();
+    translate(x1, y1);
+    rotate(angle);
+    strokeCap(ROUND);
+    line(-endHeadSize*coeff, -endHeadSize, 0, 0);
+    line(-endHeadSize*coeff, endHeadSize, 0, 0);
+    popMatrix();
+  }
+}
+</script>
+<canvas id="mycanvas"></canvas>
